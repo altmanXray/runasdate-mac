@@ -22,7 +22,7 @@ Mac version of RunAsDate: launch an application with a specified date and time w
 zsh package.sh
 ```
 
-在 `dist/` 下生成 `MacRunAsDate-1.0.dmg` 和 `MacRunAsDate-1.0.zip`。打开 DMG，把 MacRunAsDate 拖进“应用程序”即可。
+在 `dist/` 下生成 `MacRunAsDate-<版本号>.dmg` 和 `MacRunAsDate-<版本号>.zip`。打开 DMG，把 MacRunAsDate 拖进“应用程序”即可。
 
 本程序只做了 ad-hoc 签名，没有 Apple 公证。从网上或聊天工具传到另一台 Mac 后，第一次打开会被拦截：到“系统设置 → 隐私与安全性”底部点“仍要打开”。也可以在终端解除隔离：
 
@@ -41,6 +41,12 @@ xattr -dr com.apple.quarantine /Applications/MacRunAsDate.app
 - `CFAbsoluteTimeGetCurrent`（即 NSDate / Swift `Date()`）
 
 单调时钟（`mach_absolute_time`、`CLOCK_MONOTONIC`）不做修改，所以程序里的计时器和动画仍然正常。目标程序启动的子进程会继承同一个伪造时间。
+
+## 使用说明
+
+- 选择 `.app` 时，点“运行”会直接启动它。
+- 选择命令行程序时，点“运行”会在“终端”窗口里运行，能看到它的输出，第一行会显示伪造的时间。
+- 界面上的设置会自动保存，下次打开时恢复。
 
 ## 与 Windows 版选项的对应
 
@@ -62,15 +68,7 @@ xattr -dr com.apple.quarantine /Applications/MacRunAsDate.app
 2. **启用 Hardened Runtime 的程序**：除非它带有 `com.apple.security.cs.allow-dyld-environment-variables` 授权。大多数经过公证（notarized）的第三方 App 都属于这一类。
 3. **启用库验证的程序**：除非它带有 `com.apple.security.cs.disable-library-validation` 授权。
 
-对于你自己有权修改的第三方程序，可以复制一份，去掉签名后再运行：
-
-```bash
-cp -R /Applications/Foo.app ~/Foo-copy.app
-```
-
-```bash
-codesign --remove-signature ~/Foo-copy.app/Contents/MacOS/Foo
-```
+对于第 2、3 类程序，可以点界面左下角的“创建可注入副本…”。它会把程序复制到 `~/Library/Application Support/MacRunAsDate/Copies/`，去掉隔离属性，再用本机临时签名重新签名（不带 Hardened Runtime 和授权），然后自动改用这个副本。原程序不受影响。代价是副本会失去钥匙串、iCloud、推送等需要授权的功能，个别会自检签名的程序可能打不开。请只对你有权这样使用的软件操作。
 
 另外，程序如果通过网络校时或读取服务器时间，本工具也无法改变它看到的时间。
 
